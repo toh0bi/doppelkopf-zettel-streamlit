@@ -8,15 +8,29 @@ from src.game_logic import delete_round
 def render_history_tab():
     """Rendert den Historie-Tab als große Tabelle"""
     st.header("Rundenhistorie")
-    
     if st.session_state.rounds:
         # Berechne kumulative Gesamtpunkte pro Spieler über alle Runden
         player_names = [p['name'] for p in st.session_state.players]
         
+        # Header-Zeile mit Spielernamen (nur einmal ganz oben)
+        col_widths = [3] + [2] * len(player_names) + [1]
+        header_cols = st.columns(col_widths)
+        
+        with header_cols[0]:
+            st.markdown("**Info**")
+        
+        for idx, player_name in enumerate(player_names):
+            with header_cols[idx + 1]:
+                st.markdown(f"**{player_name}**")
+        
+        with header_cols[-1]:
+            st.markdown("")  # Leer für Löschen-Button-Spalte
+        
+        st.divider()
+        
         # Zeige Runden in umgekehrter Reihenfolge (neueste zuerst)
         for round_data in reversed(st.session_state.rounds):
-            # Spaltenbreiten: Info + Spieler + Löschen-Button
-            col_widths = [3] + [2] * len(player_names) + [0.5]
+            # Spaltenbreiten: Info + Spieler + Löschen-Button (konsistent mit Header)
             cols = st.columns(col_widths)
             
             # Info-Spalte

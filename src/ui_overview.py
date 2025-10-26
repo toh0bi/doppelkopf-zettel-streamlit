@@ -2,6 +2,7 @@
 Spielstand-Übersicht UI-Komponente
 """
 import streamlit as st
+import plotly.graph_objects as go
 from src.game_logic import calculate_scores
 
 
@@ -63,3 +64,55 @@ def render_overview_tab():
             # Gesamtpunkte = Summe aller absoluten Punkteänderungen
             total_points = sum(abs(score) for r in st.session_state.rounds for score in r['scores'].values())
             st.metric("Gesamtpunkte", total_points)
+        
+        # Punkteverlauf-Plot
+        st.divider()
+        st.subheader("📊 Punkteverlauf")
+        
+        # Berechne kumulative Punkte für jeden Spieler pro Runde
+        player_names = [p['name'] for p in st.session_state.players]
+        cumulative_data = {name: [0] for name in player_names}  # Startwert 0 bei Runde 0
+        
+        for round_data in st.session_state.rounds:
+            for player_name in player_names:
+                score_change = round_data['scores'].get(player_name, 0)
+                last_score = cumulative_data[player_name][-1]
+                cumulative_data[player_name].append(last_score + score_change)
+        
+        # Erstelle Plotly Figure
+        fig = go.Figure()
+        
+        # Farbpalette für bessere Unterscheidbarkeit
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
+        
+        for idx, player_name in enumerate(player_names):
+            rounds = list(range(len(cumulative_data[player_name])))
+            fig.add_trace(go.Scatter(
+                x=rounds,
+                y=cumulative_data[player_name],
+                mode='lines+markers',
+                name=player_name,
+                line=dict(width=3, color=colors[idx % len(colors)]),
+                marker=dict(size=8)
+            ))
+        
+        # Layout anpassen
+        fig.update_layout(
+            xaxis_title="Runde",
+            yaxis_title="Punkte",
+            hovermode='x unified',
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            ),
+            height=400,
+            margin=dict(l=20, r=20, t=60, b=20)
+        )
+        
+        # Nulllinie hervorheben
+        fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+        
+        st.plotly_chart(fig, use_container_width=True)
