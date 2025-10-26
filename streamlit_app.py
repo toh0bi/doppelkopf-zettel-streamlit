@@ -171,8 +171,7 @@ def main():
             st.info("ℹ️ Keine aktive Session")
         
         st.divider()
-        
-        # Export/Import
+          # Export/Import
         st.subheader("💾 Speichern/Laden")
         
         if st.session_state.session_started:
@@ -209,8 +208,11 @@ def main():
         
         # Neue Session starten
         if st.button("🔄 Neue Session starten", type="secondary", use_container_width=True):
-            for key in list(st.session_state.keys()):
+            # Lösche alle Session State Keys
+            keys_to_delete = list(st.session_state.keys())
+            for key in keys_to_delete:
                 del st.session_state[key]
+            # Force Rerun
             st.rerun()
     
     # Hauptbereich
@@ -248,8 +250,7 @@ def main():
                     if st.button("❌", key=f"remove_{player['id']}"):
                         st.session_state.players = [p for p in st.session_state.players if p['id'] != player['id']]
                         st.rerun()
-        
-        # Session starten
+          # Session starten
         st.divider()
         if len(st.session_state.players) >= 4:
             if st.button("🎮 Session starten", type="primary", use_container_width=True):
@@ -268,11 +269,45 @@ def main():
             # Solo-Toggle
             is_solo = st.checkbox("Solo-Spiel")
             
+            # Punkteingabe ZUERST
+            st.subheader("Punkte")
+            col_points1, col_points2 = st.columns([3, 1])
+            
+            with col_points1:
+                # Schnellauswahl 0-10
+                points_quick = st.selectbox(
+                    "Schnellauswahl",
+                    options=list(range(0, 11)),
+                    index=2,  # Standard: 2 Punkte
+                    help="Wähle eine Punktzahl von 0-10"
+                )
+            
+            with col_points2:
+                # Custom Eingabe
+                use_custom = st.checkbox("Andere", help="Aktiviere für negative oder höhere Punktzahlen")
+            
+            if use_custom:
+                points = st.number_input(
+                    "Benutzerdefinierte Punkte",
+                    min_value=-100,
+                    max_value=100,
+                    value=points_quick,
+                    help="Gib eine beliebige Punktzahl ein"
+                )
+            else:
+                points = points_quick
+            
+            st.divider()
+            
+            # Gewinner-Auswahl
+            st.subheader("Gewinner")
+            
             if is_solo:
                 # Solo-Spieler auswählen
                 solo_player = st.selectbox(
                     "Solo-Spieler",
-                    [p['name'] for p in st.session_state.players]
+                    [p['name'] for p in st.session_state.players],
+                    help="Wer spielt Solo?"
                 )
                 
                 # Gewinner auswählen (Solo oder andere)
@@ -284,29 +319,46 @@ def main():
                 
                 winners = [solo_player] if winner == solo_player else [p['name'] for p in st.session_state.players if p['name'] != solo_player]
             else:
-                # Normale Runde - 2 Gewinner auswählen
+                # Normale Runde - Checkboxen für Gewinner
                 st.write("Wähle die 2 Gewinner aus:")
-                winners = st.multiselect(
-                    "Gewinner",
-                    [p['name'] for p in st.session_state.players],
-                    max_selections=2
-                )
+                
+                winners = []
+                cols = st.columns(min(len(st.session_state.players), 4))
+                
+                for idx, player in enumerate(st.session_state.players):
+                    with cols[idx % len(cols)]:
+                        if st.checkbox(player['name'], key=f"winner_{player['id']}"):
+                            winners.append(player['name'])
             
-            # Punkteingabe
-            points = st.number_input("Punkte", min_value=1, max_value=10, value=2)
+            st.divider()
             
-            # Runde hinzufügen
-            if st.button("✅ Runde eintragen", type="primary", use_container_width=True):
+            # Runde hinzufügen mit Validierung
+            col_btn1, col_btn2 = st.columns([3, 1])
+            
+            with col_btn1:
+                submit_button = st.button("✅ Runde eintragen", type="primary", use_container_width=True)
+            
+            with col_btn2:
+                if st.button("🔄", help="Auswahl zurücksetzen"):
+                    st.rerun()
+            
+            if submit_button:
                 if is_solo:
                     add_round(winners, points, is_solo=True, solo_player=solo_player)
-                    st.success("Solo-Runde eingetragen!")
+                    st.success("✅ Solo-Runde eingetragen!")
+                    st.balloons()  # Visuelles Feedback!
                     st.rerun()
                 elif len(winners) == 2:
                     add_round(winners, points)
-                    st.success("Runde eingetragen!")
+                    st.success(f"✅ Runde eingetragen! {winners[0]} & {winners[1]} gewinnen {points:+d} Punkte")
+                    st.balloons()  # Visuelles Feedback!
                     st.rerun()
+                elif len(winners) == 0:
+                    st.error("❌ Bitte wähle mindestens 2 Gewinner aus!")
+                elif len(winners) == 1:
+                    st.warning("⚠️ Du hast nur 1 Gewinner gewählt. Bitte wähle 2 Gewinner!")
                 else:
-                    st.error("Bitte wähle genau 2 Gewinner aus!")
+                    st.error(f"❌ Du hast {len(winners)} Gewinner gewählt. Bitte wähle genau 2!")
         
         with tab2:
             st.header("Aktueller Spielstand")
