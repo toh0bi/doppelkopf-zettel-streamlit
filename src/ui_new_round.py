@@ -144,7 +144,6 @@ def render_new_round_tab():
 
 def _handle_round_submission(winners, points, sitting_out_player=None):
     """Verarbeitet die Rundeneintragung"""
-    import time
     
     num_winners = len(winners)
     num_players = len(st.session_state.players)
@@ -162,26 +161,20 @@ def _handle_round_submission(winners, points, sitting_out_player=None):
             solo_player = winners[0]
             add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} gewinnt Solo mit {points:+d} Punkten")
-            time.sleep(1.5)
-            _auto_rotate_sitting_out()
-            st.rerun()
+            sleep_and_rerun()
         
         elif num_winners == 2:
             # Normalspiel (2 vs 2)
             add_round(winners, points, sitting_out=sitting_out_player)
             st.success(f"✅ Runde eingetragen! {winners[0]} & {winners[1]} gewinnen {points:+d} Punkte")
-            time.sleep(1.5)
-            _auto_rotate_sitting_out()
-            st.rerun()
+            sleep_and_rerun()
         
         elif num_winners == 3:
             # Solo verloren (1 vs 3)
             solo_player = [p for p in active_players if p not in winners][0]
             add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} verliert Solo, andere gewinnen je {points:+d} Punkte")
-            time.sleep(1.5)
-            _auto_rotate_sitting_out()
-            st.rerun()
+            sleep_and_rerun()
         
         else:
             st.error(f"❌ Du hast {num_winners} Gewinner gewählt. Bei 4 aktiven Spielern: 1 (Solo gewonnen), 2 (Normal) oder 3 (Solo verloren)!")
@@ -193,30 +186,30 @@ def _handle_round_submission(winners, points, sitting_out_player=None):
             solo_player = winners[0]
             add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} gewinnt Solo mit {points:+d} Punkten")
-            time.sleep(1.5)
-            _auto_rotate_sitting_out()
-            st.rerun()
+            sleep_and_rerun()
         
         elif num_winners in [2, 3]:
             # Normalspiel bei 5-6 Spielern
             add_round(winners, points, sitting_out=sitting_out_player)
             winner_names = " & ".join(winners)
             st.success(f"✅ Runde eingetragen! {winner_names} gewinnen {points:+d} Punkte")
-            time.sleep(1.5)
-            _auto_rotate_sitting_out()
-            st.rerun()
+            sleep_and_rerun()
         
         elif num_winners == num_active - 1:
             # Solo verloren (alle außer einem gewinnen)
             solo_player = [p for p in active_players if p not in winners][0]
             add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} verliert Solo, andere gewinnen je {points:+d} Punkte")
-            time.sleep(1.5)
-            _auto_rotate_sitting_out()
-            st.rerun()
+            sleep_and_rerun()
         
         else:
             st.error(f"❌ Ungültige Gewinner-Anzahl für {num_active} aktive Spieler!")
+
+def sleep_and_rerun():
+    import time
+    time.sleep(2.5)
+    _auto_rotate_sitting_out()
+    st.rerun()
 
 
 def _auto_rotate_sitting_out():
