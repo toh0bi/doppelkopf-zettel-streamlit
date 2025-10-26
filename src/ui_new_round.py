@@ -9,53 +9,14 @@ def render_new_round_tab():
     """Rendert den Tab für neue Runden"""
     st.header("Neue Runde eintragen")
     num_players = len(st.session_state.players)
+    
     # Initialisiere reset_flag falls nicht vorhanden
     if 'reset_round_form' not in st.session_state:
         st.session_state.reset_round_form = False
     
-    # Bei 5-6 Spielern: Option für aussetzenden Spieler
-    sitting_out_player = None
-    if num_players >= 5:
-        st.subheader("Aussetzender Spieler (optional)")
-        st.caption(f"📊 {num_players} Spieler registriert - Aussetzenden-Modus aktiv")
-        
-        col_sit1, col_sit2 = st.columns([3, 1])
-        
-        with col_sit1:
-            # Default: Rotation basierend auf sitting_out_index, aber nur wenn vorher jemand ausgesetzt hat
-            if 'last_sitting_out' not in st.session_state:
-                st.session_state.last_sitting_out = None
-            
-            # Wenn beim letzten Mal "Niemand" gewählt wurde, bleibe bei "Niemand"
-            if st.session_state.last_sitting_out == "Niemand":
-                default_index = 0  # "Niemand (alle spielen)"
-            else:
-                # Ansonsten: Rotation zum nächsten Spieler
-                default_sitting_out = st.session_state.players[st.session_state.sitting_out_index % num_players]['name']
-                sitting_out_options = ["Niemand (alle spielen)"] + [p['name'] for p in st.session_state.players]
-                default_index = sitting_out_options.index(default_sitting_out) if default_sitting_out in sitting_out_options else 0
-            
-            sitting_out_options = ["Niemand (alle spielen)"] + [p['name'] for p in st.session_state.players]
-            sitting_out_selection = st.selectbox(
-                "Wer setzt aus?",
-                options=sitting_out_options,
-                index=default_index,
-                help="Standard: Rotation nach jeder Runde. Du kannst es manuell ändern."
-            )
-            if sitting_out_selection != "Niemand (alle spielen)":
-                sitting_out_player = sitting_out_selection
-                st.session_state.last_sitting_out = sitting_out_player
-            else:
-                st.session_state.last_sitting_out = "Niemand"
-        
-        with col_sit2:
-            st.write("")
-            st.write("")
-            if st.button("♻️", help="Nächster Spieler setzt aus"):
-                st.session_state.sitting_out_index = (st.session_state.sitting_out_index + 1) % num_players
-                st.rerun()
-        
-        st.divider()
+    # Initialisiere last_sitting_out falls nicht vorhanden
+    if 'last_sitting_out' not in st.session_state:
+        st.session_state.last_sitting_out = None
     
     # Punkteingabe mit Buttons
     st.subheader("Punkte")
@@ -80,8 +41,7 @@ def render_new_round_tab():
             ):
                 st.session_state.selected_points = point_value
                 st.rerun()
-    
-    # Optionale benutzerdefinierte Eingabe
+      # Optionale benutzerdefinierte Eingabe
     col_custom1, col_custom2 = st.columns([3, 1])
     
     with col_custom2:
@@ -101,28 +61,72 @@ def render_new_round_tab():
     
     st.divider()
     
-    # Gewinner-Auswahl (automatische Solo-Erkennung)
-    st.subheader("Gewinner")
+    # Gewinner-Auswahl (kombiniert mit Aussetzenden bei 5+ Spielern)
+    st.subheader("Spieler & Gewinner")
     
     # Dynamischer Hinweistext je nach Spielerzahl
     if num_players == 4:
         st.caption("💡 Tipp: 1 Gewinner = Solo gewonnen | 2 Gewinner = Normalspiel | 3 Gewinner = Solo verloren")
-    else:
-        if sitting_out_player:
-            st.caption("💡 Tipp: 1 Gewinner = Solo gewonnen | 2 Gewinner = Normalspiel | 3 Gewinner = Solo verloren")
-        else:
-            st.caption("💡 Tipp: 1 Gewinner = Solo | 2-3 Gewinner = Normalspiel | 4 Gewinner = Solo verloren")
+    elif num_players >= 5:
+        st.caption("💡 Tipp: Markiere wer aussetzt und wer gewinnt | 1 Gewinner = Solo | 2-3 Gewinner = Normalspiel")
+    
+    # Tabellen-Header
+    if num_players >= 5:
+        col_header1, col_header2, col_header3 = st.columns([1, 3, 1])
+        with col_header1:
+            st.markdown("**Setzt aus**")
+        with col_header2:
+            st.markdown("**Spieler**")
+        with col_header3:
+            st.markdown("**Gewinnt**")
+        st.divider()
+    
     winners = []
-    active_players = [p for p in st.session_state.players if p['name'] != sitting_out_player]
-    cols = st.columns(min(len(active_players), 4))
+    sitting_out_player = None
     
     # Eindeutige Keys basierend auf reset_flag
     key_suffix = "_reset" if st.session_state.reset_round_form else ""
     
-    for idx, player in enumerate(active_players):
-        with cols[idx % len(cols)]:
-            if st.checkbox(player['name'], key=f"winner_{player['id']}{key_suffix}"):
-                winners.append(player['name'])
+    # Vertikale Liste aller Spieler
+    for idx, player in enumerate(st.session_state.players):
+        if num_players >= 5:
+            # Bei 5+ Spielern: Aussetzend | Spieler | Gewinner
+            col1, col2, col3 = st.columns([1, 3, 1])
+            
+            with col1:
+                # Default: Erster Spieler (oder basierend auf Rotation)
+                default_sitting = (idx == st.session_state.sitting_out_index % num_players) and (st.session_state.last_sitting_out != "Niemand")
+                
+                if st.checkbox("", key=f"sitting_{player['id']}{key_suffix}", value=default_sitting, label_visibility="collapsed"):
+                    sitting_out_player = player['name']
+            
+            with col2:
+                st.write(player['name'])
+            
+            with col3:
+                # Deaktiviere Gewinner-Checkbox wenn Spieler aussetzt
+                is_sitting_out = (sitting_out_player == player['name'])
+                if st.checkbox("", key=f"winner_{player['id']}{key_suffix}", disabled=is_sitting_out, label_visibility="collapsed"):
+                    if not is_sitting_out:
+                        winners.append(player['name'])
+        
+        else:
+            # Bei 4 Spielern: Nur Spieler | Gewinner
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                st.write(player['name'])
+            
+            with col2:
+                if st.checkbox("", key=f"winner_{player['id']}{key_suffix}", label_visibility="collapsed"):
+                    winners.append(player['name'])
+    
+    # Speichere, ob jemand aussetzt
+    if sitting_out_player:
+        st.session_state.last_sitting_out = sitting_out_player
+    else:
+        if num_players >= 5:
+            st.session_state.last_sitting_out = "Niemand"
     
     st.divider()
     
