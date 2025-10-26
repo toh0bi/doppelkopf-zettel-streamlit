@@ -8,13 +8,17 @@ from src.game_logic import add_round
 def render_new_round_tab():
     """Rendert den Tab für neue Runden"""
     st.header("Neue Runde eintragen")
-    
     num_players = len(st.session_state.players)
+    
+    # Initialisiere reset_flag falls nicht vorhanden
+    if 'reset_round_form' not in st.session_state:
+        st.session_state.reset_round_form = False
     
     # Bei 5-6 Spielern: Option für aussetzenden Spieler
     sitting_out_player = None
     if num_players >= 5:
         st.subheader("Aussetzender Spieler (optional)")
+        st.caption(f"📊 {num_players} Spieler registriert - Aussetzenden-Modus aktiv")
         
         col_sit1, col_sit2 = st.columns([3, 1])
         
@@ -31,7 +35,6 @@ def render_new_round_tab():
                 index=default_index,
                 help="Standard: Rotation nach jeder Runde. Du kannst es manuell ändern."
             )
-            
             if sitting_out_selection != "Niemand (alle spielen)":
                 sitting_out_player = sitting_out_selection
         
@@ -43,6 +46,10 @@ def render_new_round_tab():
                 st.rerun()
         
         st.divider()
+    else:
+        # Info für 4 Spieler
+        if num_players == 4:
+            st.info("ℹ️ Bei 4 Spielern spielen alle mit. Füge einen 5. Spieler hinzu, um die Aussetzenden-Funktion zu aktivieren.")
     
     # Punkteingabe ZUERST
     st.subheader("Punkte")
@@ -83,25 +90,30 @@ def render_new_round_tab():
             st.caption("💡 Tipp: 1 Gewinner = Solo gewonnen | 2 Gewinner = Normalspiel | 3 Gewinner = Solo verloren")
         else:
             st.caption("💡 Tipp: 1 Gewinner = Solo | 2-3 Gewinner = Normalspiel | 4 Gewinner = Solo verloren")
-    
     winners = []
     active_players = [p for p in st.session_state.players if p['name'] != sitting_out_player]
     cols = st.columns(min(len(active_players), 4))
     
+    # Eindeutige Keys basierend auf reset_flag
+    key_suffix = "_reset" if st.session_state.reset_round_form else ""
+    
     for idx, player in enumerate(active_players):
         with cols[idx % len(cols)]:
-            if st.checkbox(player['name'], key=f"winner_{player['id']}"):
+            if st.checkbox(player['name'], key=f"winner_{player['id']}{key_suffix}"):
                 winners.append(player['name'])
     
     st.divider()
     
     # Runde hinzufügen mit Validierung
     col_btn1, col_btn2 = st.columns([3, 1])
+    
     with col_btn1:
         submit_button = st.button("✅ Runde eintragen", type="primary", use_container_width=True)
     
     with col_btn2:
         if st.button("🔄", help="Auswahl zurücksetzen"):
+            # Toggle reset flag um neue Keys zu erzwingen
+            st.session_state.reset_round_form = not st.session_state.reset_round_form
             st.rerun()
     
     if submit_button:
