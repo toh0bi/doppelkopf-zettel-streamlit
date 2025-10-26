@@ -25,6 +25,9 @@ def init_session_state():
     
     if 'last_imported_file' not in st.session_state:
         st.session_state.last_imported_file = None
+    
+    if 'sitting_out_index' not in st.session_state:
+        st.session_state.sitting_out_index = 0  # Startet bei erstem Spieler
 
 
 def reset_session():

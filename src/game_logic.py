@@ -19,7 +19,7 @@ def calculate_scores() -> Dict[str, int]:
     return scores
 
 
-def add_round(winners: List[str], points: int, is_solo: bool = False, solo_player: Optional[str] = None):
+def add_round(winners: List[str], points: int, is_solo: bool = False, solo_player: Optional[str] = None, sitting_out: Optional[str] = None):
     """Fügt eine neue Runde hinzu"""
     round_data = {
         'id': str(uuid.uuid4()),
@@ -29,33 +29,50 @@ def add_round(winners: List[str], points: int, is_solo: bool = False, solo_playe
         'winners': winners,
         'points': points,
         'solo_player': solo_player,
+        'sitting_out': sitting_out,
         'scores': {}
     }
+      # Aktive Spieler (ohne Aussetzenden)
+    active_players = [p for p in st.session_state.players if p['name'] != sitting_out]
+    num_active = len(active_players)
     
     # Berechne Punkteverteilung
     if is_solo and solo_player:
         # Solo-Spiel
+        num_opponents = num_active - 1
+        
         if solo_player in winners:
             # Solo gewinnt
             for player in st.session_state.players:
-                if player['name'] == solo_player:
-                    round_data['scores'][player['name']] = points * 3
+                if player['name'] == sitting_out:
+                    round_data['scores'][player['name']] = 0
+                elif player['name'] == solo_player:
+                    round_data['scores'][player['name']] = points * num_opponents
                 else:
                     round_data['scores'][player['name']] = -points
         else:
             # Solo verliert
             for player in st.session_state.players:
-                if player['name'] == solo_player:
-                    round_data['scores'][player['name']] = -points * 3
+                if player['name'] == sitting_out:
+                    round_data['scores'][player['name']] = 0
+                elif player['name'] == solo_player:
+                    round_data['scores'][player['name']] = -points * num_opponents
                 else:
                     round_data['scores'][player['name']] = points
     else:
-        # Normalspiel (2 vs 2)
+        # Normalspiel
+        num_winners = len(winners)
+        num_losers = num_active - num_winners
+        
         for player in st.session_state.players:
-            if player['name'] in winners:
-                round_data['scores'][player['name']] = points
+            if player['name'] == sitting_out:
+                round_data['scores'][player['name']] = 0
+            elif player['name'] in winners:
+                # Gewinner bekommen Punkte * Anzahl Verlierer / Anzahl Gewinner
+                round_data['scores'][player['name']] = points * num_losers // num_winners
             else:
-                round_data['scores'][player['name']] = -points
+                # Verlierer verlieren Punkte * Anzahl Gewinner / Anzahl Verlierer
+                round_data['scores'][player['name']] = -points * num_winners // num_losers
     
     st.session_state.rounds.append(round_data)
 
