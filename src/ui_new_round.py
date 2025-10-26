@@ -110,7 +110,6 @@ def render_new_round_tab():
     
     # Gewinner-Auswahl: Einfache Checkbox-Liste
     st.markdown("**Wer gewinnt?**")
-    
     for idx, player in enumerate(st.session_state.players):
         # Spieler setzt aus? Dann nicht anzeigen oder deaktivieren
         is_sitting_out = player['name'] in sitting_out_players
@@ -118,8 +117,7 @@ def render_new_round_tab():
         if not is_sitting_out:
             is_winner = st.checkbox(
                 f"✅ {player['name']}",
-                key=f"winner_{player['id']}{key_suffix}",
-                help=f"{player['name']} gewinnt"
+                key=f"winner_{player['id']}{key_suffix}"
             )
             if is_winner:
                 winners.append(player['name'])
