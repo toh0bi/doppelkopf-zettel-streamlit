@@ -4,6 +4,7 @@ Progressive Web App für Doppelkopf-Spielverwaltung
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import json
 from datetime import datetime
 from typing import List, Dict, Optional
@@ -74,6 +75,72 @@ def init_session_state():
     
     if 'created_at' not in st.session_state:
         st.session_state.created_at = datetime.now().isoformat()
+    
+    if 'auto_loaded' not in st.session_state:
+        st.session_state.auto_loaded = False
+
+def save_to_browser():
+    """Speichert die aktuelle Session im Browser localStorage"""
+    try:
+        json_data = export_session()
+        # Escaping für JavaScript
+        json_escaped = json_data.replace('`', '\\`').replace('\\', '\\\\')
+        
+        components.html(f"""
+            <script>
+                try {{
+                    localStorage.setItem('doppelkopf_session', `{json_escaped}`);
+                    localStorage.setItem('doppelkopf_last_save', new Date().toISOString());
+                    console.log('Session gespeichert in localStorage');
+                }} catch (e) {{
+                    console.error('Fehler beim Speichern:', e);
+                }}
+            </script>
+        """, height=0)
+    except Exception as e:
+        st.error(f"Fehler beim Auto-Speichern: {e}")
+
+def load_from_browser():
+    """Lädt die Session aus dem Browser localStorage"""
+    html_code = """
+        <script>
+            const session = localStorage.getItem('doppelkopf_session');
+            const lastSave = localStorage.getItem('doppelkopf_last_save');
+            
+            if (session) {
+                // Sende Daten an Streamlit via query parameter hack
+                const data = {
+                    session: session,
+                    lastSave: lastSave
+                };
+                
+                // Nutze streamlit's setComponentValue
+                window.parent.postMessage({
+                    type: 'streamlit:setComponentValue',
+                    value: data
+                }, '*');
+            } else {
+                window.parent.postMessage({
+                    type: 'streamlit:setComponentValue',
+                    value: null
+                }, '*');
+            }
+        </script>
+        <div style="display: none;">Loading...</div>
+    """
+    
+    result = components.html(html_code, height=0)
+    return result
+
+def clear_browser_storage():
+    """Löscht die gespeicherte Session aus dem Browser"""
+    components.html("""
+        <script>
+            localStorage.removeItem('doppelkopf_session');
+            localStorage.removeItem('doppelkopf_last_save');
+            console.log('Session aus localStorage gelöscht');
+        </script>
+    """, height=0)
 
 def calculate_scores() -> Dict[str, int]:
     """Berechnet die Gesamtpunktzahl für jeden Spieler"""
@@ -156,44 +223,81 @@ def import_session(json_data: str):
 def main():
     init_session_state()
     
+    # Auto-Load beim ersten Aufruf
+    if not st.session_state.auto_loaded:
+        st.session_state.auto_loaded = True
+        
+        # Versuche Session aus Browser zu laden
+        with st.spinner("Lade gespeicherte Session..."):
+            loaded_data = load_from_browser()
+            
+            # Zeige Info wenn Session geladen wurde
+            if loaded_data and isinstance(loaded_data, dict) and 'session' in loaded_data:
+                try:
+                    if import_session(loaded_data['session']):
+                        last_save = loaded_data.get('lastSave', 'unbekannt')
+                        st.toast(f"✅ Session wiederhergestellt (zuletzt gespeichert: {last_save})", icon="💾")
+                except:
+                    pass
+    
     # Header
     st.markdown("<h1 class='main-header'>🃏 Doppelkopf Zettel</h1>", unsafe_allow_html=True)
-    
-    # Sidebar für Session-Management
+      # Sidebar für Session-Management
     with st.sidebar:
         st.header("📋 Session-Verwaltung")
+        
+        # Status-Anzeige
+        if st.session_state.session_started:
+            st.success("✅ Session aktiv")
+            st.caption(f"🎮 {len(st.session_state.players)} Spieler")
+            st.caption(f"🎯 {len(st.session_state.rounds)} Runden")
+        else:
+            st.info("ℹ️ Keine aktive Session")
+        
+        st.divider()
         
         # Export/Import
         st.subheader("💾 Speichern/Laden")
         
         if st.session_state.session_started:
+            # Auto-Save Button
+            if st.button("💾 Jetzt speichern", use_container_width=True, type="primary"):
+                save_to_browser()
+                st.success("In Browser gespeichert!")
+                st.caption("💡 Automatisches Speichern nach jeder Runde aktiv")
+            
+            st.divider()
+            
+            # Manueller Export
             json_export = export_session()
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"doppelkopf_{timestamp}.json"
             
             st.download_button(
-                label="📥 Session exportieren",
+                label="📥 Als Datei exportieren",
                 data=json_export,
                 file_name=filename,
-                mime="application/json"
+                mime="application/json",
+                use_container_width=True
             )
         
         uploaded_file = st.file_uploader("📤 Session importieren", type=['json'])
         if uploaded_file is not None:
             json_data = uploaded_file.read().decode('utf-8')
             if import_session(json_data):
+                save_to_browser()  # Auch im Browser speichern
                 st.success("Session erfolgreich importiert!")
                 st.rerun()
         
         st.divider()
         
         # Neue Session starten
-        if st.button("🔄 Neue Session starten", type="secondary"):
+        if st.button("🔄 Neue Session starten", type="secondary", use_container_width=True):
+            clear_browser_storage()
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
-    
-    # Hauptbereich
+      # Hauptbereich
     if not st.session_state.session_started:
         # Spieler-Eingabe
         st.header("👥 Spieler hinzufügen")
@@ -213,7 +317,7 @@ def main():
                         'id': str(uuid.uuid4()),
                         'name': player_name
                     })
-                    st.rerun()
+                    save_to_browser()  # Auto-Save                    st.rerun()
                 elif player_name in [p['name'] for p in st.session_state.players]:
                     st.error("Spieler existiert bereits!")
         
@@ -227,6 +331,7 @@ def main():
                 with col2:
                     if st.button("❌", key=f"remove_{player['id']}"):
                         st.session_state.players = [p for p in st.session_state.players if p['id'] != player['id']]
+                        save_to_browser()  # Auto-Save
                         st.rerun()
         
         # Session starten
@@ -234,6 +339,7 @@ def main():
         if len(st.session_state.players) >= 4:
             if st.button("🎮 Session starten", type="primary", use_container_width=True):
                 st.session_state.session_started = True
+                save_to_browser()  # Auto-Save
                 st.rerun()
         else:
             st.info(f"Noch {4 - len(st.session_state.players)} Spieler erforderlich (mindestens 4)")
@@ -274,15 +380,16 @@ def main():
             
             # Punkteingabe
             points = st.number_input("Punkte", min_value=1, max_value=10, value=2)
-            
-            # Runde hinzufügen
+              # Runde hinzufügen
             if st.button("✅ Runde eintragen", type="primary", use_container_width=True):
                 if is_solo:
                     add_round(winners, points, is_solo=True, solo_player=solo_player)
+                    save_to_browser()  # Auto-Save
                     st.success("Solo-Runde eingetragen!")
                     st.rerun()
                 elif len(winners) == 2:
                     add_round(winners, points)
+                    save_to_browser()  # Auto-Save
                     st.success("Runde eingetragen!")
                     st.rerun()
                 else:
@@ -352,10 +459,10 @@ def main():
                             # Zeige Score-Änderungen
                             score_details = " | ".join([f"{name}: {score:+d}" for name, score in round_data['scores'].items()])
                             st.caption(score_details)
-                        
                         with col2:
                             if st.button("🗑️", key=f"delete_{round_data['id']}"):
                                 st.session_state.rounds = [r for r in st.session_state.rounds if r['id'] != round_data['id']]
+                                save_to_browser()  # Auto-Save
                                 st.rerun()
                         
                         st.divider()
