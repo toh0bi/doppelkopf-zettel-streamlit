@@ -73,12 +73,11 @@ def render_new_round_tab():
     
     # Eindeutige Keys basierend auf reset_flag
     key_suffix = "_reset" if st.session_state.reset_round_form else ""
-    
-    # Kompakte Darstellung: Icon-Buttons statt großer Spalten
+      # Liste aller Spieler mit Checkboxen
     for idx, player in enumerate(st.session_state.players):
         if num_players >= 5:
-            # Bei 5+ Spielern: Kompakte 3-Spalten-Ansicht
-            col_pause, col_name, col_win = st.columns([0.5, 2, 0.5])
+            # Bei 5+ Spielern: Aussetzend-Checkbox | Spielername | Gewinner-Checkbox
+            col_pause, col_name, col_win = st.columns([1, 3, 1])
             
             with col_pause:
                 # Default: Basierend auf Rotation
@@ -86,41 +85,43 @@ def render_new_round_tab():
                 if st.session_state.last_sitting_out and st.session_state.last_sitting_out != "Niemand":
                     default_sitting = (idx == st.session_state.sitting_out_index % num_players)
                 
-                # Checkbox mit Emoji als "Label"
                 is_sitting = st.checkbox(
-                    "⏸️",
+                    f"⏸️ {player['name'][:1]}",  # Kurz-Label: Emoji + erster Buchstabe
                     key=f"sitting_{player['id']}{key_suffix}",
                     value=default_sitting,
+                    label_visibility="collapsed",
                     help=f"{player['name']} setzt aus"
                 )
                 if is_sitting:
                     sitting_out_players.append(player['name'])
             
             with col_name:
-                st.write(f"**{player['name']}**" if idx == 0 else player['name'])
+                st.write(player['name'])
             
             with col_win:
                 is_sitting_out = (player['name'] in sitting_out_players)
                 is_winner = st.checkbox(
-                    "✅",
+                    f"✅ {player['name'][:1]}",  # Kurz-Label: Emoji + erster Buchstabe
                     key=f"winner_{player['id']}{key_suffix}",
                     disabled=is_sitting_out,
+                    label_visibility="collapsed",
                     help=f"{player['name']} gewinnt" if not is_sitting_out else "Kann nicht gewinnen (setzt aus)"
                 )
                 if is_winner and not is_sitting_out:
                     winners.append(player['name'])
         
         else:
-            # Bei 4 Spielern: Nur 2 Spalten (Name + Gewinner)
-            col_name, col_win = st.columns([2.5, 0.5])
+            # Bei 4 Spielern: Nur Spielername | Gewinner-Checkbox
+            col_name, col_win = st.columns([3, 1])
             
             with col_name:
-                st.write(f"**{player['name']}**" if idx == 0 else player['name'])
+                st.write(player['name'])
             
             with col_win:
                 is_winner = st.checkbox(
-                    "✅",
+                    f"✅ {player['name'][:1]}",  # Kurz-Label: Emoji + erster Buchstabe
                     key=f"winner_{player['id']}{key_suffix}",
+                    label_visibility="collapsed",
                     help=f"{player['name']} gewinnt"
                 )
                 if is_winner:
