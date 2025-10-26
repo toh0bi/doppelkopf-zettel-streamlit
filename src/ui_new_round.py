@@ -83,10 +83,12 @@ def render_new_round_tab():
     sitting_out_players = []
     
     # Eindeutige Keys basierend auf reset_flag
-    key_suffix = "_reset" if st.session_state.reset_round_form else ""
-      # Bei 5+ Spielern: Erst auswählen wer aussetzt
+    key_suffix = "_reset" if st.session_state.reset_round_form else ""    # Bei 5+ Spielern: Erst auswählen wer aussetzt
     if num_players >= 5:
         st.markdown("**Wer setzt aus?**")
+        
+        # DEBUG: Zeige aktuelle Session State Werte
+        st.caption(f"🔍 DEBUG: sitting_out_index={st.session_state.sitting_out_index}, last_sitting_out='{st.session_state.last_sitting_out}'")
         
         # Default-Wert basierend auf Rotation
         default_sitting_index = 0  # Standard: "Niemand"
@@ -95,8 +97,11 @@ def render_new_round_tab():
             # sitting_out_index zeigt auf den NÄCHSTEN Spieler der aussetzen soll
             # +1 weil Dropdown bei Index 0 "Niemand" hat
             default_sitting_index = (st.session_state.sitting_out_index % num_players) + 1
+            st.caption(f"🔍 DEBUG: Berechnet default_sitting_index={default_sitting_index} (sollte Spieler '{st.session_state.players[st.session_state.sitting_out_index]['name']}' sein)")
         
         sitting_out_options = ["Niemand"] + [p['name'] for p in st.session_state.players]
+        st.caption(f"🔍 DEBUG: Dropdown-Optionen: {sitting_out_options}")
+        
         sitting_out_choice = st.selectbox(
             "Aussetzender Spieler",
             options=sitting_out_options,
@@ -140,11 +145,14 @@ def render_new_round_tab():
             # Finde den Index des aktuell Aussetzenden für die Rotation
             for idx, player in enumerate(st.session_state.players):
                 if player['name'] == sitting_out_player:
+                    old_index = st.session_state.sitting_out_index
                     st.session_state.sitting_out_index = idx
+                    st.caption(f"🔍 DEBUG: Speichere sitting_out_index: {old_index} → {idx} ('{sitting_out_player}')")
                     break
         else:
             if num_players >= 5:
                 st.session_state.last_sitting_out = "Niemand"
+                st.caption(f"🔍 DEBUG: Niemand setzt aus - last_sitting_out auf 'Niemand' gesetzt")
     
     st.divider()
     
@@ -234,7 +242,8 @@ def _handle_round_submission(winners, points, sitting_out_player=None):
 
 def sleep_and_rerun():
     import time
-    time.sleep(2.5)
+    st.write("⏳ Speichere Runde und rotiere Aussetzenden...")
+    time.sleep(1.5)  # Verkürzt für besseres Debugging
     _auto_rotate_sitting_out()
     st.rerun()
 
@@ -244,9 +253,13 @@ def _auto_rotate_sitting_out():
     if len(st.session_state.players) >= 5:
         # Nur rotieren, wenn beim letzten Mal jemand ausgesetzt hat (nicht "Niemand")
         if st.session_state.last_sitting_out and st.session_state.last_sitting_out != "Niemand":
+            old_index = st.session_state.sitting_out_index
             # Erhöhe Index um 1 für nächste Runde
             st.session_state.sitting_out_index = (st.session_state.sitting_out_index + 1) % len(st.session_state.players)
             
             # Debug: Zeige welcher Spieler als nächstes dran ist
             next_player = st.session_state.players[st.session_state.sitting_out_index]['name']
-            print(f"DEBUG: Rotation - Nächster Aussetzender: {next_player} (Index: {st.session_state.sitting_out_index})")
+            st.write(f"🔄 DEBUG: Auto-Rotation - Index {old_index} → {st.session_state.sitting_out_index}")
+            st.write(f"🔄 DEBUG: Nächster Aussetzender: '{next_player}'")
+        else:
+            st.write(f"🔄 DEBUG: Keine Rotation (last_sitting_out='{st.session_state.last_sitting_out}')")
