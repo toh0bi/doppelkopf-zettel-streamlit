@@ -4,20 +4,26 @@ Eine Progressive Web App (PWA) zur Verwaltung von Doppelkopf-Spielrunden, gebaut
 
 ## Features
 
-### ✅ MVP (Phase 1) - Implementiert
+### ✅ Implementiert
 - ✅ Spieler-Eingabe (4-6 Spieler)
-- ✅ Rundeneingabe (Gewinner + Punkte)
+- ✅ Rundeneingabe mit Re/Kontra Auswahl
 - ✅ Solo-Spiele mit korrekter Punkteberechnung
-- ✅ Live-Punktetabelle mit Rangliste
-- ✅ Rundenhistorie mit Lösch-Funktion
+- ✅ Live-Punktetabelle mit Rangliste und Solo-Anzahl
+- ✅ Rundenhistorie als interaktive Tabelle mit kumulativen Punkten
+- ✅ Re/Kontra und Bock-Runden Markierung
+- ✅ Grafischer Punkteverlauf (Plotly)
+- ✅ Erweiterte Statistiken:
+  - ✅ Gewinnrate pro Spieler
+  - ✅ Beste/schlechteste Pärchen
+  - ✅ Durchschnittliche Punkte pro Runde und Bockrunde
+  - ✅ Solo-Spiele mit Erfolgsrate
+  - ✅ Längste Gewinn-/Verluststrähne
+  - ✅ Re vs. Kontra Statistik
 - ✅ Session State Speicherung
 - ✅ JSON Export/Import
 
-### 🔄 Phase 2 (Geplant)
-- [ ] Grafischer Punkteverlauf (Plotly/Altair)
-- [ ] Erweiterte Statistiken
-- [ ] Bock-Runden (Multiplikator)
-- [ ] Rundenhistorie editieren
+### 🔄 In Arbeit
+- [ ] Rundenhistorie editierbar machen
 - [ ] Spielabend archivieren
 
 ## Punkteberechnung
@@ -66,16 +72,27 @@ Die App öffnet sich automatisch im Browser unter `http://localhost:8501`
 - **Framework:** Streamlit (Python)
 - **Datenspeicherung:** Session State + JSON Export
 - **Deployment:** Streamlit Community Cloud
-- **Charts:** Geplant mit Plotly/Altair
+- **Charts:** Plotly für interaktive Visualisierungen
 
 ## Projektstruktur
 
 ```
 doppelkopf-zettel-streamlit/
-├── streamlit_app.py        # Hauptanwendung
-├── requirements.txt        # Python-Abhängigkeiten
-├── REQUIREMENTS.md         # Vollständige Anforderungen
-└── README.md              # Dieses Dokument
+├── streamlit_app.py           # Hauptanwendung
+├── requirements.txt           # Python-Abhängigkeiten
+├── src/
+│   ├── game_logic.py         # Punkteberechnung
+│   ├── session_manager.py    # Session-Verwaltung
+│   ├── data_manager.py       # Export/Import
+│   ├── statistics.py         # Statistik-Berechnungen
+│   ├── ui_player_setup.py    # Spieler-Eingabe
+│   ├── ui_new_round.py       # Rundeneingabe
+│   ├── ui_overview.py        # Übersicht & Statistiken
+│   ├── ui_statistics.py      # Erweiterte Statistiken
+│   ├── ui_history.py         # Rundenhistorie
+│   └── ui_sidebar.py         # Sidebar-Navigation
+├── REQUIREMENTS.md            # Vollständige Anforderungen
+└── README.md                  # Dieses Dokument
 ```
 
 ## Nutzung
@@ -87,10 +104,15 @@ doppelkopf-zettel-streamlit/
 
 ### Runde eintragen
 1. Tab "Neue Runde" öffnen
-2. Bei Solo: Checkbox aktivieren und Solo-Spieler wählen
-3. Gewinner auswählen (2 Spieler bei Normal, Solo oder andere bei Solo-Spiel)
-4. Punkte eingeben
-5. "Runde eintragen" klicken
+2. Punkte auswählen (Buttons 1-5 oder benutzerdefiniert)
+3. Aussetzenden Spieler wählen (bei 5-6 Spielern)
+4. Gewinner auswählen
+   - 1 Gewinner = Solo gewonnen
+   - 2 Gewinner = Normalspiel
+   - 3 Gewinner = Solo verloren
+5. Re/Kontra Team wählen (🟢 Re oder 🔴 Kontra)
+6. Optional: Bock-Runde markieren (🎯)
+7. "Runde eintragen" klicken
 
 ### Session speichern/laden
 - **Exportieren:** Sidebar → "Session exportieren" → JSON-Datei herunterladen
@@ -104,10 +126,12 @@ doppelkopf-zettel-streamlit/
 - Nullsummenspiel: Gesamtpunkte aller Spieler = 0
 
 ### Nächste Schritte
-1. Grafischen Punkteverlauf hinzufügen
-2. Bock-Runden implementieren
-3. Erweiterte Statistiken
-4. Rundenhistorie editierbar machen
+1. ✅ Grafischen Punkteverlauf hinzufügen
+2. ✅ Re/Kontra und Bock-Runden Tracking
+3. ✅ Historie als Tabelle mit kumulativen Punkten
+4. ✅ Erweiterte Statistiken implementieren
+5. Rundenhistorie editierbar machen
+6. Spielabend archivieren
 
 ## Lizenz
 

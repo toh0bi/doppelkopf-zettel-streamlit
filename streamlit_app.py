@@ -10,6 +10,7 @@ from src.ui_player_setup import render_player_setup
 from src.ui_new_round import render_new_round_tab
 from src.ui_overview import render_overview_tab
 from src.ui_history import render_history_tab
+from src.ui_statistics import render_statistics_tab
 
 # Seitenkonfiguration
 st.set_page_config(
@@ -66,14 +67,13 @@ def main():
     
     # Sidebar
     render_sidebar()
-    
-    # Hauptbereich
+      # Hauptbereich
     if not st.session_state.session_started:
         # Spieler-Setup Phase
         render_player_setup()
     else:
         # Spiel-Phase mit Tabs
-        tab1, tab2, tab3 = st.tabs(["📝 Neue Runde", "📊 Übersicht", "📜 Historie"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📝 Neue Runde", "📊 Übersicht", "📈 Statistiken", "📜 Historie"])
         
         with tab1:
             render_new_round_tab()
@@ -82,6 +82,9 @@ def main():
             render_overview_tab()
         
         with tab3:
+            render_statistics_tab()
+        
+        with tab4:
             render_history_tab()
 
 

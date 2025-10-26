@@ -107,9 +107,11 @@ Eine cookiebasierte Web-Anwendung zur Verwaltung von Doppelkopf-Spielrunden ohne
 
 #### 4.3 Statistiken
 - [ ] Gewinnrate pro Spieler
-- [ ] Durchschnittliche Punkte pro Runde
+- [ ] Welches Pärchen spielt am besten zusammen und welches am schlechtesten?
+- [ ] Durchschnittliche Punkte pro Runde und pro Bockrunde
 - [ ] Anzahl Solo-Spiele und Erfolgsrate
 - [ ] Längste Gewinn-/Verluststrähne
+- [ ] Wie häufig gewinnt Reh im Gegensatz zu Kontra?
 
 ---
 
