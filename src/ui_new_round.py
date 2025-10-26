@@ -73,13 +73,11 @@ def _handle_round_submission(winners, points):
     
     if num_winners == 0:
         st.error("❌ Bitte wähle mindestens einen Gewinner aus!")
-    
     elif num_winners == 1:
         # Solo gewonnen (1 vs 3)
         solo_player = winners[0]
         add_round(winners, points, is_solo=True, solo_player=solo_player)
         st.success(f"✅ Solo-Runde eingetragen! {solo_player} gewinnt Solo mit {points:+d} Punkten")
-        st.balloons()
         time.sleep(1.5)  # Kurze Verzögerung für Feedback
         st.rerun()
     
@@ -87,7 +85,6 @@ def _handle_round_submission(winners, points):
         # Normalspiel (2 vs 2)
         add_round(winners, points)
         st.success(f"✅ Runde eingetragen! {winners[0]} & {winners[1]} gewinnen {points:+d} Punkte")
-        st.balloons()
         time.sleep(1.5)  # Kurze Verzögerung für Feedback
         st.rerun()
     
@@ -97,7 +94,6 @@ def _handle_round_submission(winners, points):
         solo_player = [p for p in all_players if p not in winners][0]
         add_round(winners, points, is_solo=True, solo_player=solo_player)
         st.success(f"✅ Solo-Runde eingetragen! {solo_player} verliert Solo, andere gewinnen je {points:+d} Punkte")
-        st.balloons()
         time.sleep(1.5)  # Kurze Verzögerung für Feedback
         st.rerun()
     
