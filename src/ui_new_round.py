@@ -13,8 +13,7 @@ def render_new_round_tab():
     # Initialisiere reset_flag falls nicht vorhanden
     if 'reset_round_form' not in st.session_state:
         st.session_state.reset_round_form = False
-    
-    # Initialisiere last_sitting_out falls nicht vorhanden
+      # Initialisiere last_sitting_out falls nicht vorhanden
     if 'last_sitting_out' not in st.session_state:
         st.session_state.last_sitting_out = None
     
@@ -25,13 +24,13 @@ def render_new_round_tab():
     if 'selected_points' not in st.session_state:
         st.session_state.selected_points = 2
     
-    # 5 große Buttons für häufige Punktzahlen
-    cols_points = st.columns(5)
+    # 5 Buttons in 2 Reihen für bessere Mobile-Darstellung
     common_points = [1, 2, 3, 4, 5]
     
-    for idx, point_value in enumerate(common_points):
-        with cols_points[idx]:
-            # Highlight des ausgewählten Buttons
+    # Erste Reihe: 1, 2, 3
+    cols_row1 = st.columns(3)
+    for idx, point_value in enumerate(common_points[:3]):
+        with cols_row1[idx]:
             button_type = "primary" if st.session_state.selected_points == point_value else "secondary"
             if st.button(
                 f"**{point_value}**",
@@ -40,92 +39,93 @@ def render_new_round_tab():
                 use_container_width=True
             ):
                 st.session_state.selected_points = point_value
-                st.rerun()    # Optionale benutzerdefinierte Eingabe
-    col_custom1, col_custom2 = st.columns([3, 1])
+                st.rerun()
     
-    with col_custom2:
+    # Zweite Reihe: 4, 5, [Andere]
+    cols_row2 = st.columns(3)
+    for idx, point_value in enumerate(common_points[3:]):
+        with cols_row2[idx]:
+            button_type = "primary" if st.session_state.selected_points == point_value else "secondary"
+            if st.button(
+                f"**{point_value}**",
+                key=f"points_{point_value}",
+                type=button_type,
+                use_container_width=True            ):
+                st.session_state.selected_points = point_value
+                st.rerun()
+    
+    # "Andere" Option in dritter Spalte der zweiten Reihe
+    with cols_row2[2]:
         use_custom = st.checkbox("Andere", help="Für negative oder höhere Punktzahlen")
     
+    # Benutzerdefinierte Eingabe wenn "Andere" aktiviert
     if use_custom:
-        with col_custom1:
-            points = st.number_input(
-                "Benutzerdefinierte Punkte",
-                min_value=-100,
-                max_value=100,
-                value=st.session_state.selected_points,
-                help="Gib eine beliebige Punktzahl ein"
-            )
+        points = st.number_input(
+            "Benutzerdefinierte Punkte",
+            min_value=-100,
+            max_value=100,
+            value=st.session_state.selected_points,
+            help="Gib eine beliebige Punktzahl ein"
+        )
     else:
         points = st.session_state.selected_points
     st.divider()
     
     # Gewinner-Auswahl (kombiniert mit Aussetzenden bei 5+ Spielern)
     st.subheader("Spieler & Gewinner")
-    
-    # Dynamischer Hinweistext je nach Spielerzahl
+      # Dynamischer Hinweistext je nach Spielerzahl
     if num_players == 4:
         st.caption("💡 1 Gewinner = Solo gewonnen | 2 Gewinner = Normalspiel | 3 Gewinner = Solo verloren")
     elif num_players >= 5:
-        st.caption("💡 Markiere ⏸️ für Aussetzer und ✅ für Gewinner | Min. 4 Spieler müssen mitspielen")
+        st.caption("💡 Wähle aus wer aussetzt und wer gewinnt | Min. 4 Spieler müssen mitspielen")
     
     winners = []
     sitting_out_players = []
     
     # Eindeutige Keys basierend auf reset_flag
     key_suffix = "_reset" if st.session_state.reset_round_form else ""
-      # Liste aller Spieler mit Checkboxen
-    for idx, player in enumerate(st.session_state.players):
-        if num_players >= 5:
-            # Bei 5+ Spielern: Aussetzend-Checkbox | Spielername | Gewinner-Checkbox
-            col_pause, col_name, col_win = st.columns([1, 3, 1])
-            
-            with col_pause:
-                # Default: Basierend auf Rotation
-                default_sitting = False
-                if st.session_state.last_sitting_out and st.session_state.last_sitting_out != "Niemand":
-                    default_sitting = (idx == st.session_state.sitting_out_index % num_players)
-                
-                is_sitting = st.checkbox(
-                    f"⏸️ {player['name'][:1]}",  # Kurz-Label: Emoji + erster Buchstabe
-                    key=f"sitting_{player['id']}{key_suffix}",
-                    value=default_sitting,
-                    label_visibility="collapsed",
-                    help=f"{player['name']} setzt aus"
-                )
-                if is_sitting:
-                    sitting_out_players.append(player['name'])
-            
-            with col_name:
-                st.write(player['name'])
-            
-            with col_win:
-                is_sitting_out = (player['name'] in sitting_out_players)
-                is_winner = st.checkbox(
-                    f"✅ {player['name'][:1]}",  # Kurz-Label: Emoji + erster Buchstabe
-                    key=f"winner_{player['id']}{key_suffix}",
-                    disabled=is_sitting_out,
-                    label_visibility="collapsed",
-                    help=f"{player['name']} gewinnt" if not is_sitting_out else "Kann nicht gewinnen (setzt aus)"
-                )
-                if is_winner and not is_sitting_out:
-                    winners.append(player['name'])
+    
+    # Bei 5+ Spielern: Erst auswählen wer aussetzt
+    if num_players >= 5:
+        st.markdown("**Wer setzt aus?**")
         
+        # Default-Wert basierend auf Rotation
+        default_sitting_index = 0
+        if st.session_state.last_sitting_out and st.session_state.last_sitting_out != "Niemand":
+            default_sitting_index = (st.session_state.sitting_out_index % num_players) + 1  # +1 wegen "Niemand"
+        
+        sitting_out_options = ["Niemand"] + [p['name'] for p in st.session_state.players]
+        sitting_out_choice = st.selectbox(
+            "Aussetzender Spieler",
+            options=sitting_out_options,
+            index=default_sitting_index,
+            key=f"sitting_out_select{key_suffix}",
+            label_visibility="collapsed"
+        )
+        
+        if sitting_out_choice != "Niemand":
+            sitting_out_players.append(sitting_out_choice)
+        
+        st.divider()
+    
+    # Gewinner-Auswahl: Einfache Checkbox-Liste
+    st.markdown("**Wer gewinnt?**")
+    
+    for idx, player in enumerate(st.session_state.players):
+        # Spieler setzt aus? Dann nicht anzeigen oder deaktivieren
+        is_sitting_out = player['name'] in sitting_out_players
+        
+        if not is_sitting_out:
+            is_winner = st.checkbox(
+                f"✅ {player['name']}",
+                key=f"winner_{player['id']}{key_suffix}",
+                help=f"{player['name']} gewinnt"
+            )
+            if is_winner:
+                winners.append(player['name'])
         else:
-            # Bei 4 Spielern: Nur Spielername | Gewinner-Checkbox
-            col_name, col_win = st.columns([3, 1])
-            
-            with col_name:
-                st.write(player['name'])
-            
-            with col_win:
-                is_winner = st.checkbox(
-                    f"✅ {player['name'][:1]}",  # Kurz-Label: Emoji + erster Buchstabe
-                    key=f"winner_{player['id']}{key_suffix}",
-                    label_visibility="collapsed",
-                    help=f"{player['name']} gewinnt"
-                )
-                if is_winner:
-                    winners.append(player['name'])
+            # Ausgegraut anzeigen wenn Spieler aussetzt
+            st.markdown(f"⏸️ ~~{player['name']}~~ *(setzt aus)*")
     
     # Validierung: Mindestens 4 Spieler müssen spielen
     sitting_out_player = sitting_out_players[0] if len(sitting_out_players) == 1 else None
