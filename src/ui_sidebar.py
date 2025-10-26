@@ -24,7 +24,6 @@ def render_sidebar():
         
         # Export/Import
         st.subheader("💾 Speichern/Laden")
-        
         if st.session_state.session_started:
             # Export
             json_export = export_session()
@@ -37,7 +36,8 @@ def render_sidebar():
                 file_name=filename,
                 mime="application/json",
                 use_container_width=True,
-                help="Speichere die Session als JSON-Datei"
+                help="Speichere die Session als JSON-Datei",
+                key=f"download_session_{len(st.session_state.rounds)}"  # Eindeutiger Key
             )
             
             st.caption("💡 Tipp: Exportiere regelmäßig!")

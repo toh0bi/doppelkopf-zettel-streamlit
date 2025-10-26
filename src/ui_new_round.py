@@ -9,7 +9,6 @@ def render_new_round_tab():
     """Rendert den Tab für neue Runden"""
     st.header("Neue Runde eintragen")
     num_players = len(st.session_state.players)
-    
     # Initialisiere reset_flag falls nicht vorhanden
     if 'reset_round_form' not in st.session_state:
         st.session_state.reset_round_form = False
@@ -23,12 +22,20 @@ def render_new_round_tab():
         col_sit1, col_sit2 = st.columns([3, 1])
         
         with col_sit1:
-            # Default: Rotation basierend auf sitting_out_index
-            default_sitting_out = st.session_state.players[st.session_state.sitting_out_index % num_players]['name']
+            # Default: Rotation basierend auf sitting_out_index, aber nur wenn vorher jemand ausgesetzt hat
+            if 'last_sitting_out' not in st.session_state:
+                st.session_state.last_sitting_out = None
+            
+            # Wenn beim letzten Mal "Niemand" gewählt wurde, bleibe bei "Niemand"
+            if st.session_state.last_sitting_out == "Niemand":
+                default_index = 0  # "Niemand (alle spielen)"
+            else:
+                # Ansonsten: Rotation zum nächsten Spieler
+                default_sitting_out = st.session_state.players[st.session_state.sitting_out_index % num_players]['name']
+                sitting_out_options = ["Niemand (alle spielen)"] + [p['name'] for p in st.session_state.players]
+                default_index = sitting_out_options.index(default_sitting_out) if default_sitting_out in sitting_out_options else 0
             
             sitting_out_options = ["Niemand (alle spielen)"] + [p['name'] for p in st.session_state.players]
-            default_index = sitting_out_options.index(default_sitting_out) if default_sitting_out in sitting_out_options else 0
-            
             sitting_out_selection = st.selectbox(
                 "Wer setzt aus?",
                 options=sitting_out_options,
@@ -37,6 +44,9 @@ def render_new_round_tab():
             )
             if sitting_out_selection != "Niemand (alle spielen)":
                 sitting_out_player = sitting_out_selection
+                st.session_state.last_sitting_out = sitting_out_player
+            else:
+                st.session_state.last_sitting_out = "Niemand"
         
         with col_sit2:
             st.write("")
@@ -46,36 +56,48 @@ def render_new_round_tab():
                 st.rerun()
         
         st.divider()
-    else:
-        # Info für 4 Spieler
-        if num_players == 4:
-            st.info("ℹ️ Bei 4 Spielern spielen alle mit. Füge einen 5. Spieler hinzu, um die Aussetzenden-Funktion zu aktivieren.")
     
-    # Punkteingabe ZUERST
+    # Punkteingabe mit Buttons
     st.subheader("Punkte")
-    col_points1, col_points2 = st.columns([3, 1])
     
-    with col_points1:
-        points_quick = st.selectbox(
-            "Schnellauswahl",
-            options=list(range(0, 11)),
-            index=2,
-            help="Wähle eine Punktzahl von 0-10"
-        )
+    # Initialisiere selected_points im Session State
+    if 'selected_points' not in st.session_state:
+        st.session_state.selected_points = 2
     
-    with col_points2:
-        use_custom = st.checkbox("Andere", help="Aktiviere für negative oder höhere Punktzahlen")
+    # 5 große Buttons für häufige Punktzahlen
+    cols_points = st.columns(5)
+    common_points = [1, 2, 3, 4, 5]
+    
+    for idx, point_value in enumerate(common_points):
+        with cols_points[idx]:
+            # Highlight des ausgewählten Buttons
+            button_type = "primary" if st.session_state.selected_points == point_value else "secondary"
+            if st.button(
+                f"**{point_value}**",
+                key=f"points_{point_value}",
+                type=button_type,
+                use_container_width=True
+            ):
+                st.session_state.selected_points = point_value
+                st.rerun()
+    
+    # Optionale benutzerdefinierte Eingabe
+    col_custom1, col_custom2 = st.columns([3, 1])
+    
+    with col_custom2:
+        use_custom = st.checkbox("Andere", help="Für negative oder höhere Punktzahlen")
     
     if use_custom:
-        points = st.number_input(
-            "Benutzerdefinierte Punkte",
-            min_value=-100,
-            max_value=100,
-            value=points_quick,
-            help="Gib eine beliebige Punktzahl ein"
-        )    
+        with col_custom1:
+            points = st.number_input(
+                "Benutzerdefinierte Punkte",
+                min_value=-100,
+                max_value=100,
+                value=st.session_state.selected_points,
+                help="Gib eine beliebige Punktzahl ein"
+            )
     else:
-        points = points_quick
+        points = st.session_state.selected_points
     
     st.divider()
     
@@ -198,6 +220,8 @@ def _handle_round_submission(winners, points, sitting_out_player=None):
 
 
 def _auto_rotate_sitting_out():
-    """Rotiert automatisch zum nächsten aussetzenden Spieler"""
+    """Rotiert automatisch zum nächsten aussetzenden Spieler (nur wenn jemand ausgesetzt hat)"""
     if len(st.session_state.players) >= 5:
-        st.session_state.sitting_out_index = (st.session_state.sitting_out_index + 1) % len(st.session_state.players)
+        # Nur rotieren, wenn beim letzten Mal jemand ausgesetzt hat (nicht "Niemand")
+        if st.session_state.last_sitting_out != "Niemand":
+            st.session_state.sitting_out_index = (st.session_state.sitting_out_index + 1) % len(st.session_state.players)
