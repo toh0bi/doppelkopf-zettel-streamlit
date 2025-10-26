@@ -112,8 +112,7 @@ def render_new_round_tab():
             sitting_out_players.append(sitting_out_choice)
         
         st.divider()
-    
-    # Gewinner-Auswahl: Einfache Checkbox-Liste
+      # Gewinner-Auswahl: Einfache Checkbox-Liste
     st.markdown("**Wer gewinnt?**")
     for idx, player in enumerate(st.session_state.players):
         # Spieler setzt aus? Dann nicht anzeigen oder deaktivieren
@@ -121,14 +120,14 @@ def render_new_round_tab():
         
         if not is_sitting_out:
             is_winner = st.checkbox(
-                f"✅ {player['name']}",
+                player['name'],
                 key=f"winner_{player['id']}{key_suffix}"
             )
             if is_winner:
                 winners.append(player['name'])
         else:
             # Ausgegraut anzeigen wenn Spieler aussetzt
-            st.markdown(f"⏸️ ~~{player['name']}~~ *(setzt aus)*")    # Validierung: Mindestens 4 Spieler müssen spielen
+            st.markdown(f"⏸️ ~~{player['name']}~~ *(setzt aus)*")# Validierung: Mindestens 4 Spieler müssen spielen
     sitting_out_player = sitting_out_players[0] if len(sitting_out_players) == 1 else None
     num_active = num_players - len(sitting_out_players)
     
@@ -141,8 +140,30 @@ def render_new_round_tab():
         if sitting_out_player:
             st.session_state.last_sitting_out = sitting_out_player
         else:
-            if num_players >= 5:
-                st.session_state.last_sitting_out = "Niemand"
+            if num_players >= 5:                st.session_state.last_sitting_out = "Niemand"
+    
+    st.divider()
+    
+    # Re/Kontra Auswahl
+    st.markdown("**Welches Team hat gewonnen?**")
+    col_re, col_kontra = st.columns(2)
+    
+    with col_re:
+        team_re = st.button("🟢 Re", type="primary" if st.session_state.get('selected_team') == 'Re' else "secondary", use_container_width=True, key=f"team_re{key_suffix}")
+        if team_re:
+            st.session_state.selected_team = 'Re'
+    
+    with col_kontra:
+        team_kontra = st.button("🔴 Kontra", type="primary" if st.session_state.get('selected_team') == 'Kontra' else "secondary", use_container_width=True, key=f"team_kontra{key_suffix}")
+        if team_kontra:
+            st.session_state.selected_team = 'Kontra'
+    
+    # Initialisiere selected_team falls nicht vorhanden
+    if 'selected_team' not in st.session_state:
+        st.session_state.selected_team = 'Re'
+    
+    # Bock-Runde Checkbox
+    is_bock = st.checkbox("🎯 Bock-Runde", help="Markiere diese Runde als Bock-Runde (nur zur Info, ändert keine Berechnung)", key=f"is_bock{key_suffix}")
     
     st.divider()
     
@@ -157,7 +178,6 @@ def render_new_round_tab():
             # Toggle reset flag um neue Keys zu erzwingen
             st.session_state.reset_round_form = not st.session_state.reset_round_form
             st.rerun()
-    
     if submit_button:
         # Nochmal validieren vor Submit
         if num_players >= 5 and num_active < 4:
@@ -175,6 +195,9 @@ def _handle_round_submission(winners, points, sitting_out_player=None):
     active_players = [p['name'] for p in st.session_state.players if p['name'] != sitting_out_player]
     num_active = len(active_players)
     
+    # Hole Team und Bock-Status
+    winning_team = st.session_state.get('selected_team', 'Re')
+    is_bock = st.session_state.get(f"is_bock{('_reset' if st.session_state.reset_round_form else '')}", False)
     if num_winners == 0:
         st.error("❌ Bitte wähle mindestens einen Gewinner aus!")
         return
@@ -184,38 +207,37 @@ def _handle_round_submission(winners, points, sitting_out_player=None):
         if num_winners == 1:
             # Solo gewonnen (1 vs 3)
             solo_player = winners[0]
-            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
+            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player, winning_team=winning_team, is_bock=is_bock)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} gewinnt Solo mit {points:+d} Punkten")
             sleep_and_rerun()
         
         elif num_winners == 2:
             # Normalspiel (2 vs 2)
-            add_round(winners, points, sitting_out=sitting_out_player)
+            add_round(winners, points, sitting_out=sitting_out_player, winning_team=winning_team, is_bock=is_bock)
             st.success(f"✅ Runde eingetragen! {winners[0]} & {winners[1]} gewinnen {points:+d} Punkte")
             sleep_and_rerun()
         
         elif num_winners == 3:
             # Solo verloren (1 vs 3)
             solo_player = [p for p in active_players if p not in winners][0]
-            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
+            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player, winning_team=winning_team, is_bock=is_bock)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} verliert Solo, andere gewinnen je {points:+d} Punkte")
             sleep_and_rerun()
         
         else:
             st.error(f"❌ Du hast {num_winners} Gewinner gewählt. Bei 4 aktiven Spielern: 1 (Solo gewonnen), 2 (Normal) oder 3 (Solo verloren)!")
-    
-    # Bei 5-6 Spielern (ohne Aussetzenden)
+      # Bei 5-6 Spielern (ohne Aussetzenden)
     else:
         if num_winners == 1:
             # Solo gewonnen
             solo_player = winners[0]
-            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
+            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player, winning_team=winning_team, is_bock=is_bock)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} gewinnt Solo mit {points:+d} Punkten")
             sleep_and_rerun()
         
         elif num_winners in [2, 3]:
             # Normalspiel bei 5-6 Spielern
-            add_round(winners, points, sitting_out=sitting_out_player)
+            add_round(winners, points, sitting_out=sitting_out_player, winning_team=winning_team, is_bock=is_bock)
             winner_names = " & ".join(winners)
             st.success(f"✅ Runde eingetragen! {winner_names} gewinnen {points:+d} Punkte")
             sleep_and_rerun()
@@ -223,7 +245,7 @@ def _handle_round_submission(winners, points, sitting_out_player=None):
         elif num_winners == num_active - 1:
             # Solo verloren (alle außer einem gewinnen)
             solo_player = [p for p in active_players if p not in winners][0]
-            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player)
+            add_round(winners, points, is_solo=True, solo_player=solo_player, sitting_out=sitting_out_player, winning_team=winning_team, is_bock=is_bock)
             st.success(f"✅ Solo-Runde eingetragen! {solo_player} verliert Solo, andere gewinnen je {points:+d} Punkte")
             sleep_and_rerun()
         

@@ -19,7 +19,7 @@ def calculate_scores() -> Dict[str, int]:
     return scores
 
 
-def add_round(winners: List[str], points: int, is_solo: bool = False, solo_player: Optional[str] = None, sitting_out: Optional[str] = None):
+def add_round(winners: List[str], points: int, is_solo: bool = False, solo_player: Optional[str] = None, sitting_out: Optional[str] = None, winning_team: str = 'Re', is_bock: bool = False):
     """Fügt eine neue Runde hinzu"""
     round_data = {
         'id': str(uuid.uuid4()),
@@ -30,6 +30,8 @@ def add_round(winners: List[str], points: int, is_solo: bool = False, solo_playe
         'points': points,
         'solo_player': solo_player,
         'sitting_out': sitting_out,
+        'winning_team': winning_team,
+        'is_bock': is_bock,
         'scores': {}
     }
     
