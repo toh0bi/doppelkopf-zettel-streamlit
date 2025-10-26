@@ -67,6 +67,8 @@ def render_new_round_tab():
 
 def _handle_round_submission(winners, points):
     """Verarbeitet die Rundeneintragung"""
+    import time
+    
     num_winners = len(winners)
     
     if num_winners == 0:
@@ -78,6 +80,7 @@ def _handle_round_submission(winners, points):
         add_round(winners, points, is_solo=True, solo_player=solo_player)
         st.success(f"✅ Solo-Runde eingetragen! {solo_player} gewinnt Solo mit {points:+d} Punkten")
         st.balloons()
+        time.sleep(1.5)  # Kurze Verzögerung für Feedback
         st.rerun()
     
     elif num_winners == 2:
@@ -85,6 +88,7 @@ def _handle_round_submission(winners, points):
         add_round(winners, points)
         st.success(f"✅ Runde eingetragen! {winners[0]} & {winners[1]} gewinnen {points:+d} Punkte")
         st.balloons()
+        time.sleep(1.5)  # Kurze Verzögerung für Feedback
         st.rerun()
     
     elif num_winners == 3:
@@ -94,6 +98,7 @@ def _handle_round_submission(winners, points):
         add_round(winners, points, is_solo=True, solo_player=solo_player)
         st.success(f"✅ Solo-Runde eingetragen! {solo_player} verliert Solo, andere gewinnen je {points:+d} Punkte")
         st.balloons()
+        time.sleep(1.5)  # Kurze Verzögerung für Feedback
         st.rerun()
     
     else:
