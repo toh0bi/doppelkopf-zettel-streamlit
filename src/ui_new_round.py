@@ -102,11 +102,15 @@ def render_new_round_tab():
         sitting_out_options = ["Niemand"] + [p['name'] for p in st.session_state.players]
         st.caption(f"🔍 DEBUG: Dropdown-Optionen: {sitting_out_options}")
         
+        # WICHTIG: Key basiert auf sitting_out_index, damit Dropdown neu gerendert wird!
+        dropdown_key = f"sitting_out_select_{st.session_state.sitting_out_index}{key_suffix}"
+        st.caption(f"🔍 DEBUG: Dropdown-Key: {dropdown_key}")
+        
         sitting_out_choice = st.selectbox(
             "Aussetzender Spieler",
             options=sitting_out_options,
             index=default_sitting_index,
-            key=f"sitting_out_select{key_suffix}",
+            key=dropdown_key,
             label_visibility="collapsed"
         )
         
