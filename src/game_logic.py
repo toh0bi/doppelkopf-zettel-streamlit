@@ -32,13 +32,14 @@ def add_round(winners: List[str], points: int, is_solo: bool = False, solo_playe
         'sitting_out': sitting_out,
         'scores': {}
     }
-      # Aktive Spieler (ohne Aussetzenden)
+    
+    # Aktive Spieler (ohne Aussetzenden)
     active_players = [p for p in st.session_state.players if p['name'] != sitting_out]
     num_active = len(active_players)
     
     # Berechne Punkteverteilung
     if is_solo and solo_player:
-        # Solo-Spiel
+        # Solo-Spiel: Solist bekommt/verliert points × num_opponents, andere ±points
         num_opponents = num_active - 1
         
         if solo_player in winners:
@@ -60,19 +61,17 @@ def add_round(winners: List[str], points: int, is_solo: bool = False, solo_playe
                 else:
                     round_data['scores'][player['name']] = points
     else:
-        # Normalspiel
-        num_winners = len(winners)
-        num_losers = num_active - num_winners
+        # Normalspiel - KEINE Teilung!
+        # Jeder Gewinner bekommt volle Punkte, jeder Verlierer verliert volle Punkte
+        # Das bedeutet: Summe ist nur bei gleichen Teams = 0, sonst != 0 (gewollt!)
         
         for player in st.session_state.players:
             if player['name'] == sitting_out:
                 round_data['scores'][player['name']] = 0
             elif player['name'] in winners:
-                # Gewinner bekommen Punkte * Anzahl Verlierer / Anzahl Gewinner
-                round_data['scores'][player['name']] = points * num_losers // num_winners
+                round_data['scores'][player['name']] = points
             else:
-                # Verlierer verlieren Punkte * Anzahl Gewinner / Anzahl Verlierer
-                round_data['scores'][player['name']] = -points * num_winners // num_losers
+                round_data['scores'][player['name']] = -points
     
     st.session_state.rounds.append(round_data)
 
