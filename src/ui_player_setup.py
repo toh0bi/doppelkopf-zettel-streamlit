@@ -3,10 +3,15 @@ Spieler-Setup UI-Komponente
 """
 import streamlit as st
 import uuid
+from src.ui_cloud_session import render_cloud_session_dialog, render_load_session_dialog
 
 
 def render_player_setup():
     """Rendert die Spieler-Eingabe Seite"""
+    # Cloud-Load Dialog anzeigen (falls noch keine Session)
+    if not st.session_state.session_started and not st.session_state.players:
+        render_load_session_dialog()
+    
     st.header("👥 Spieler hinzufügen")
     st.write("Bitte gib die Namen von 4-6 Spielern ein:")
     
@@ -47,9 +52,13 @@ def render_player_setup():
                 if st.button("❌", key=f"remove_{player['id']}"):
                     st.session_state.players = [p for p in st.session_state.players if p['id'] != player['id']]
                     st.rerun()
-    
-    # Session starten
+      # Session starten
     st.divider()
+    
+    # Cloud-Sync Dialog (vor dem Session-Start)
+    if st.session_state.players:
+        render_cloud_session_dialog()
+    
     if len(st.session_state.players) >= 4:
         if st.button("🎮 Session starten", type="primary", use_container_width=True):
             st.session_state.session_started = True

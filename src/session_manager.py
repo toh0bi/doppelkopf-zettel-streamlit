@@ -28,6 +28,13 @@ def init_session_state():
     
     if 'sitting_out_index' not in st.session_state:
         st.session_state.sitting_out_index = 0  # Startet bei erstem Spieler
+    
+    # Cloud-Sync Variablen
+    if 'cloud_sync_enabled' not in st.session_state:
+        st.session_state.cloud_sync_enabled = False
+    
+    if 'cloud_session_name' not in st.session_state:
+        st.session_state.cloud_session_name = None
 
 
 def reset_session():

@@ -5,12 +5,18 @@ import streamlit as st
 from datetime import datetime
 from src.data_manager import export_session, import_session
 from src.session_manager import reset_session
+from src.ui_cloud_session import render_cloud_sync_status
 
 
 def render_sidebar():
     """Rendert die Sidebar mit Session-Management"""
     with st.sidebar:
         st.header("📋 Session-Verwaltung")
+        
+        # Cloud-Sync Status
+        render_cloud_sync_status()
+        
+        st.divider()
         
         # Status-Anzeige
         if st.session_state.session_started:

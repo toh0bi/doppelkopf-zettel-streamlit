@@ -3,6 +3,7 @@ Neue Runde eintragen UI-Komponente
 """
 import streamlit as st
 from src.game_logic import add_round
+from src.cloud_sync import auto_sync_after_round
 
 
 def render_new_round_tab():
@@ -256,6 +257,10 @@ def sleep_and_rerun():
     import time
     time.sleep(1.5)
     _auto_rotate_sitting_out()
+    
+    # Automatisches Cloud-Sync nach jeder Runde
+    auto_sync_after_round()
+    
     st.rerun()
 
 

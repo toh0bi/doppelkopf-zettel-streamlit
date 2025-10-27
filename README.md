@@ -21,6 +21,10 @@ Eine Progressive Web App (PWA) zur Verwaltung von Doppelkopf-Spielrunden, gebaut
   - ✅ Re vs. Kontra Statistik
 - ✅ Session State Speicherung
 - ✅ JSON Export/Import
+- ✅ **Cloud-Sync mit AWS DynamoDB**
+  - ✅ Automatische Speicherung nach jeder Runde
+  - ✅ Spiel auf jedem Gerät fortsetzen
+  - ✅ 1 Jahr Datenspeicherung (TTL)
 
 ### 🔄 In Arbeit
 - [ ] Rundenhistorie editierbar machen
@@ -56,6 +60,21 @@ streamlit run streamlit_app.py
 
 Die App öffnet sich automatisch im Browser unter `http://localhost:8501`
 
+### Cloud-Sync einrichten (Optional)
+
+Die App unterstützt automatische Cloud-Speicherung mit AWS DynamoDB:
+
+1. **Siehe vollständige Anleitung:** [DYNAMODB_SETUP.md](DYNAMODB_SETUP.md)
+2. Erstelle `.streamlit/secrets.toml` (siehe `.streamlit/secrets.toml.example`)
+3. Trage deine AWS Credentials ein
+4. Fertig! Cloud-Sync ist jetzt verfügbar
+
+**Vorteile:**
+- ☁️ Spiel auf jedem Gerät fortsetzen
+- 🔄 Automatische Speicherung nach jeder Runde
+- 💾 Daten bleiben 1 Jahr gespeichert
+- 💰 **Kostenlos** mit AWS Free Tier
+
 ### Deployment auf Streamlit Community Cloud
 
 1. Repository auf GitHub pushen (Public Repo)
@@ -80,17 +99,22 @@ Die App öffnet sich automatisch im Browser unter `http://localhost:8501`
 doppelkopf-zettel-streamlit/
 ├── streamlit_app.py           # Hauptanwendung
 ├── requirements.txt           # Python-Abhängigkeiten
+├── DYNAMODB_SETUP.md          # Cloud-Sync Setup-Anleitung
 ├── src/
 │   ├── game_logic.py         # Punkteberechnung
 │   ├── session_manager.py    # Session-Verwaltung
 │   ├── data_manager.py       # Export/Import
 │   ├── statistics.py         # Statistik-Berechnungen
+│   ├── cloud_sync.py         # ☁️ DynamoDB Integration
+│   ├── ui_cloud_session.py   # ☁️ Cloud-Session UI
 │   ├── ui_player_setup.py    # Spieler-Eingabe
 │   ├── ui_new_round.py       # Rundeneingabe
 │   ├── ui_overview.py        # Übersicht & Statistiken
 │   ├── ui_statistics.py      # Erweiterte Statistiken
 │   ├── ui_history.py         # Rundenhistorie
 │   └── ui_sidebar.py         # Sidebar-Navigation
+├── .streamlit/
+│   └── secrets.toml.example  # AWS Credentials Vorlage
 ├── REQUIREMENTS.md            # Vollständige Anforderungen
 └── README.md                  # Dieses Dokument
 ```
@@ -99,8 +123,10 @@ doppelkopf-zettel-streamlit/
 
 ### Session starten
 1. App öffnen
-2. 4-6 Spielernamen eingeben
-3. "Session starten" klicken
+2. **(Optional) Cloud-Spiel laden:** Session-Namen eingeben → "Laden"
+3. 4-6 Spielernamen eingeben
+4. **(Optional) Cloud-Sync aktivieren:** Checkbox aktivieren + eindeutigen Session-Namen wählen
+5. "Session starten" klicken
 
 ### Runde eintragen
 1. Tab "Neue Runde" öffnen
