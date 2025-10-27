@@ -115,39 +115,46 @@ def render_statistics_tab():
                                unsafe_allow_html=True)
                 else:
                     st.caption("Keine Pechsträhne")
-    
-    # ===== TAB 2: Team-Statistiken =====
+      # ===== TAB 2: Team-Statistiken =====
     with stats_tab2:
         st.subheader("👥 Beste & Schlechteste Pärchen")
-        st.caption("Nur Normalspiele (2 vs 2) mit mind. 2 gemeinsamen Runden")
+        st.caption("Basierend auf durchschnittlichen Punkten pro Spiel (mind. 2 gemeinsame Runden)")
         
         best_teams, worst_teams = calculate_team_performance()
         
         if best_teams:
             st.markdown("### 🏆 Beste Pärchen")
-            for player1, player2, score in best_teams:
-                col1, col2 = st.columns([3, 1])
+            for player1, player2, avg_score, games in best_teams:
+                col1, col2, col3 = st.columns([3, 1, 1])
                 
                 with col1:
                     st.write(f"**{player1}** & **{player2}**")
                 
                 with col2:
-                    st.markdown(f"<span style='color: #28a745; font-weight: bold;'>{score:+d} Punkte</span>",
+                    color = "#28a745" if avg_score > 0 else "#ffc107" if avg_score == 0 else "#dc3545"
+                    st.markdown(f"<span style='color: {color}; font-weight: bold;'>{avg_score:+.2f} Ø Pkt/Spiel</span>",
                                unsafe_allow_html=True)
+                
+                with col3:
+                    st.caption(f"{games} Spiele")
             
             st.divider()
             
             if worst_teams:
                 st.markdown("### 💔 Schlechteste Pärchen")
-                for player1, player2, score in worst_teams:
-                    col1, col2 = st.columns([3, 1])
+                for player1, player2, avg_score, games in worst_teams:
+                    col1, col2, col3 = st.columns([3, 1, 1])
                     
                     with col1:
                         st.write(f"**{player1}** & **{player2}**")
                     
                     with col2:
-                        st.markdown(f"<span style='color: #dc3545; font-weight: bold;'>{score:+d} Punkte</span>",
+                        color = "#dc3545" if avg_score < 0 else "#ffc107" if avg_score == 0 else "#28a745"
+                        st.markdown(f"<span style='color: {color}; font-weight: bold;'>{avg_score:+.2f} Ø Pkt/Spiel</span>",
                                    unsafe_allow_html=True)
+                    
+                    with col3:
+                        st.caption(f"{games} Spiele")
         else:
             st.info("Noch nicht genug Normalspiele für Team-Statistiken (mind. 2 Spiele pro Pärchen)")
     

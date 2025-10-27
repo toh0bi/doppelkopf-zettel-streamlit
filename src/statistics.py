@@ -38,10 +38,12 @@ def calculate_win_rate() -> Dict[str, float]:
     return win_rates
 
 
-def calculate_team_performance() -> Tuple[List[Tuple[str, str, int]], List[Tuple[str, str, int]]]:
+def calculate_team_performance() -> Tuple[List[Tuple[str, str, float, int]], List[Tuple[str, str, float, int]]]:
     """
     Berechnet welche Pärchen am besten/schlechtesten zusammen spielen
+    Basierend auf durchschnittlichen Punkten pro Spiel (nicht Gesamtpunkte!)
     Gibt zurück: (beste_paerchen, schlechteste_paerchen)
+    Jedes Tupel: (spieler1, spieler2, avg_punkte_pro_spiel, anzahl_spiele)
     """
     # Speichere Performance für jedes Pärchen
     team_scores = defaultdict(int)
@@ -63,9 +65,13 @@ def calculate_team_performance() -> Tuple[List[Tuple[str, str, int]], List[Tuple
                 team_scores[loser_pair] -= round_data['points']
                 team_games[loser_pair] += 1
     
-    # Sortiere nach Performance
-    team_performance = [(pair[0], pair[1], team_scores[pair]) for pair in team_scores.keys() if team_games[pair] >= 2]  # Min. 2 Spiele
-    team_performance.sort(key=lambda x: x[2], reverse=True)
+    # Berechne Durchschnitt pro Spiel und sortiere
+    team_performance = [
+        (pair[0], pair[1], team_scores[pair] / team_games[pair], team_games[pair]) 
+        for pair in team_scores.keys() 
+        if team_games[pair] >= 2  # Min. 2 Spiele
+    ]
+    team_performance.sort(key=lambda x: x[2], reverse=True)  # Sortiere nach avg_punkte
     
     best_teams = team_performance[:3] if len(team_performance) >= 3 else team_performance
     worst_teams = team_performance[-3:] if len(team_performance) >= 3 else []
