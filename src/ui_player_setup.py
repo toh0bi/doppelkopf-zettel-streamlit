@@ -15,20 +15,37 @@ def render_player_setup():
     st.header("👥 Spieler hinzufügen")
     st.write("Bitte gib die Namen von 4-6 Spielern ein:")
     
+    # Maximale Spieleranzahl erreicht?
+    max_players_reached = len(st.session_state.players) >= 6
+    
+    if max_players_reached:
+        st.warning("⚠️ Maximale Spieleranzahl erreicht (6 Spieler)")
+    
     # Form für bessere Enter-Unterstützung
     with st.form(key="add_player_form", clear_on_submit=True):
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            player_name = st.text_input("Spielername", key="new_player_input")
+            player_name = st.text_input(
+                "Spielername", 
+                key="new_player_input",
+                disabled=max_players_reached
+            )
         
         with col2:
             st.write("")  # Spacer
             st.write("")  # Spacer
-            submit_button = st.form_submit_button("➕ Hinzufügen", type="primary")
+            submit_button = st.form_submit_button(
+                "➕ Hinzufügen", 
+                type="primary",
+                disabled=max_players_reached
+            )
         
         if submit_button:
-            if player_name and player_name.strip():
+            # Nochmal prüfen (falls zwischen Render und Submit etwas passiert ist)
+            if len(st.session_state.players) >= 6:
+                st.error("❌ Maximale Spieleranzahl (6) bereits erreicht!")
+            elif player_name and player_name.strip():
                 if player_name not in [p['name'] for p in st.session_state.players]:
                     st.session_state.players.append({
                         'id': str(uuid.uuid4()),
@@ -51,12 +68,11 @@ def render_player_setup():
             with col2:
                 if st.button("❌", key=f"remove_{player['id']}"):
                     st.session_state.players = [p for p in st.session_state.players if p['id'] != player['id']]
-                    st.rerun()
-      # Session starten
+                    st.rerun()    # Session starten
     st.divider()
     
-    # Cloud-Sync Dialog (vor dem Session-Start)
-    if st.session_state.players:
+    # Cloud-Sync Dialog (nur anzeigen wenn >= 4 Spieler, also Session startbar)
+    if len(st.session_state.players) >= 4:
         render_cloud_session_dialog()
     
     if len(st.session_state.players) >= 4:

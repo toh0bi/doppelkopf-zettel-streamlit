@@ -15,11 +15,24 @@ def render_cloud_session_dialog():
     Zeigt Dialog für Cloud-Sync Aktivierung an
     Wird beim Spieler-Setup aufgerufen
     """
-    if not check_cloud_credentials():
-        return  # Keine AWS Credentials → Cloud-Sync nicht verfügbar
-    
     st.markdown("---")
     st.markdown("### ☁️ Cloud-Speicherung (Optional)")
+    
+    # Prüfe AWS Credentials
+    has_credentials = check_cloud_credentials()
+    
+    if not has_credentials:
+        st.warning("⚠️ **AWS Credentials nicht konfiguriert.** Cloud-Sync ist deaktiviert.")
+        with st.expander("ℹ️ Wie aktiviere ich Cloud-Sync?"):
+            st.info("""
+            **Setup-Anleitung:** Siehe `DYNAMODB_SETUP.md`
+            
+            1. AWS DynamoDB Tabelle erstellen
+            2. IAM User mit Access Keys erstellen
+            3. `.streamlit/secrets.toml` konfigurieren
+            4. App neu starten
+            """)
+        return  # Keine weiteren Optionen anzeigen
     
     with st.expander("ℹ️ Was ist Cloud-Speicherung?", expanded=False):
         st.info("""
@@ -73,10 +86,26 @@ def render_load_session_dialog():
     Dialog zum Laden einer existierenden Cloud-Session
     Wird beim App-Start angezeigt
     """
-    if not check_cloud_credentials():
-        return False
-    
     st.markdown("### 📂 Existierendes Spiel laden")
+    
+    # Prüfe AWS Credentials
+    has_credentials = check_cloud_credentials()
+    
+    if not has_credentials:
+        with st.expander("ℹ️ Cloud-Spiel laden", expanded=False):
+            st.warning("⚠️ **AWS Credentials nicht konfiguriert.**")
+            st.info("""
+            **Cloud-Sync aktivieren:**
+            
+            1. Siehe vollständige Anleitung: `DYNAMODB_SETUP.md`
+            2. Erstelle `.streamlit/secrets.toml`
+            3. Trage AWS Credentials ein
+            4. App neu starten
+            
+            **Jetzt:** Du kannst nur lokale Sessions erstellen (JSON Export/Import verfügbar).
+            """)
+        st.markdown("---")
+        return False
     
     with st.expander("ℹ️ Cloud-Spiel laden", expanded=True):
         st.info("""
